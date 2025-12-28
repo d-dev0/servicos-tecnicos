@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: agendamento-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: agendamento_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - agendamento-network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  agendamento-network:
+    driver: bridge
