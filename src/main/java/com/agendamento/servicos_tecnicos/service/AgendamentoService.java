@@ -36,8 +36,12 @@ public class AgendamentoService {
             throw new RuntimeException("Não é possível agendar no passado!");
         }
 
-
-        Usuario usuario = usuarioService.buscarEntidadePorId(dto.getUsuarioId());
+        Usuario usuario;
+        if (dto.getUsuarioId() != null) {
+            usuario = usuarioService.buscarEntidadePorId(dto.getUsuarioId());
+        } else {
+            usuario = usuarioService.buscarCabeleireiraPadrao();
+        }
 
         if (usuario.getRole() != Usuario.Role.CABELEREIRO) {
             throw new RuntimeException("Apenas técnicos podem ter agendamentos. " +

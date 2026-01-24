@@ -111,4 +111,14 @@ public class UsuarioService {
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado com ID: " + id));
     }
 
+    public Usuario buscarCabeleireiraPadrao() {
+        List<Usuario> cabeleireiros = usuarioRepository.findByRole(Usuario.Role.CABELEREIRO);
+        if (cabeleireiros.isEmpty()) {
+            throw new RuntimeException("Nenhuma cabeleireira cadastrada. Cadastre um usuário com role CABELEREIRO.");
+        }
+        if (cabeleireiros.size() > 1) {
+            throw new RuntimeException("Existe mais de uma cabeleireira cadastrada. Informe usuarioId no agendamento.");
+        }
+        return cabeleireiros.get(0);
+    }
 }

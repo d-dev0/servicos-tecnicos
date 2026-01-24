@@ -4,9 +4,12 @@ import com.agendamento.servicos_tecnicos.entity.*;
 import com.agendamento.servicos_tecnicos.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.util.List;
 
 // Esta classe executa automaticamente quando a aplicação iniciar
 @Component
@@ -17,6 +20,7 @@ public class TestRepositories implements CommandLineRunner {
     private final UsuarioRepository usuarioRepository;
     private final ServicoRepository servicoRepository;
     private final AgendamentoRepository agendamentoRepository;
+    private final BCryptPasswordEncoder passwordEncoder;
 
     @Override
     public void run(String... args) throws Exception {
@@ -28,7 +32,7 @@ public class TestRepositories implements CommandLineRunner {
                     Usuario novo = Usuario.builder()
                             .nome("João Silva")
                             .email("joao@email.com")
-                            .senha("123456")
+                            .senha(passwordEncoder.encode("123456"))
                             .role(Usuario.Role.CABELEREIRO)
                             .build();
                     return usuarioRepository.save(novo);
@@ -39,28 +43,56 @@ public class TestRepositories implements CommandLineRunner {
             cabeleireiro = usuarioRepository.save(cabeleireiro);
         }
 
+        if (cabeleireiro.getSenha() == null || !cabeleireiro.getSenha().startsWith("$2")) {
+            cabeleireiro.setSenha(passwordEncoder.encode("123456"));
+            cabeleireiro = usuarioRepository.save(cabeleireiro);
+        }
+
         System.out.println("✅ Cabeleireiro: ID = " + cabeleireiro.getId());
 
         // 2. Criar e salvar serviço
-        Servico servico = Servico.builder()
-                .nome("Instalação de Ar Condicionado")
-                .duracao(120)
-                .descricao("Instalação completa incluindo suporte")
-                .build();
+        String nomeServicoSeed = "Corte Feminino";
 
-        servico = servicoRepository.save(servico);
-        System.out.println("✅ Serviço criado: ID = " + servico.getId());
+        List<Servico> candidatos = servicoRepository.findByNomeContainingIgnoreCase(nomeServicoSeed);
+        Servico servico = candidatos.stream()
+                .filter(s -> s.getNome() != null && s.getNome().equalsIgnoreCase(nomeServicoSeed))
+                .findFirst()
+                .orElseGet(() -> {
+                    Servico novo = Servico.builder()
+                            .nome(nomeServicoSeed)
+                            .duracao(45)
+                            .descricao("Corte, finalização e escova")
+                            .build();
+
+                    return servicoRepository.save(novo);
+                });
+        System.out.println("✅ Serviço: ID = " + servico.getId());
 
         // 3. Criar e salvar agendamento
-        Agendamento agendamento = Agendamento.builder()
-                .dataHora(LocalDateTime.now().plusDays(1))
-                .usuario(cabeleireiro)
-                .servico(servico)
-                .status(Agendamento.Status.AGENDADO)
-                .build();
+        LocalDateTime dataHoraAgendamento = LocalDateTime.now()
+                .plusDays(1)
+                .withHour(10)
+                .withMinute(0)
+                .withSecond(0)
+                .withNano(0);
+        LocalDate dataAgendamento = dataHoraAgendamento.toLocalDate();
+        boolean jaExisteAgendamentoNaData = !agendamentoRepository
+                .findByUsuarioAndData(cabeleireiro.getId(), dataAgendamento)
+                .isEmpty();
 
-        agendamento = agendamentoRepository.save(agendamento);
-        System.out.println("✅ Agendamento criado: ID = " + agendamento.getId());
+        if (!jaExisteAgendamentoNaData) {
+            Agendamento agendamento = Agendamento.builder()
+                    .dataHora(dataHoraAgendamento)
+                    .usuario(cabeleireiro)
+                    .servico(servico)
+                    .status(Agendamento.Status.AGENDADO)
+                    .build();
+
+            agendamento = agendamentoRepository.save(agendamento);
+            System.out.println("✅ Agendamento criado: ID = " + agendamento.getId());
+        } else {
+            System.out.println("ℹ️ Agendamento já existe para a data " + dataAgendamento);
+        }
 
         // 4. Buscar dados
         long totalUsuarios = usuarioRepository.count();

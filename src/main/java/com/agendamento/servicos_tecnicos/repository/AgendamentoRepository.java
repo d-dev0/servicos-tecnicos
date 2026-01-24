@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -41,7 +42,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
             nativeQuery = true)
     List<Agendamento> findByUsuarioAndData(
             @Param("usuarioId") Long usuarioId,
-            @Param("data") String data
+            @Param("data") LocalDate data
     );
     @Query("SELECT COUNT(a) FROM Agendamento a " +
             "WHERE a.usuario.id = :usuarioId " +
